@@ -73,29 +73,29 @@ pipeline{
                }
             }
         }
-        stage('PUSH to JFROG') {
-          when {
-            expression { params.action == 'create' }
-                       }
-           steps {
-            script {
-              echo "Attempting to push artifacts to JFrog Artifactory"
-                  withCredentials([usernamePassword(
-                  credentialsId: "artifactory",
-                  usernameVariable: "USER",
-                  passwordVariable: "PASS"
-                  )]) {
-                   // Use the ARTIFACTORY_USER and ARTIFACTORY_PASSWORD variables
-               echo "Username: $USER"
-               echo "Password: $PASS"
+//         stage('PUSH to JFROG') {
+//           when {
+//             expression { params.action == 'create' }
+//                        }
+//            steps {
+//             script {
+//               echo "Attempting to push artifacts to JFrog Artifactory"
+//                   withCredentials([usernamePassword(
+//                   credentialsId: "artifactory",
+//                   usernameVariable: "USER",
+//                   passwordVariable: "PASS"
+//                   )]) {
+//                    // Use the ARTIFACTORY_USER and ARTIFACTORY_PASSWORD variables
+//                echo "Username: $USER"
+//                echo "Password: $PASS"
 
-           def curlCommand = "curl -u '${USER}:${PASS}' -T target/*.jar http://54.236.56.178:8082/artifactory/example-repo-local/"
-           echo "Executing curl command: $curlCommand"
-           sh curlCommand
-         }
-      }
-   }
-}
+//            def curlCommand = "curl -u '${USER}:${PASS}' -T target/*.jar http://54.236.56.178:8082/artifactory/example-repo-local/"
+//            echo "Executing curl command: $curlCommand"
+//            sh curlCommand
+//          }
+//       }
+//    }
+// }
 
         stage('Docker Image Build'){
          when { expression {  params.action == 'create' } }
@@ -123,7 +123,15 @@ pipeline{
                    dockerImagePush("${params.ImageName}","${params.ImageTag}","${params.DockerHubUser}")
                }
             }
-        }   
+        }  
+        stage ('Pushing Jfrog File'){
+          when { expression {  params.action == 'create' } }
+          steps{
+            script{
+                 sh 'curl -X PUT -u admin:7362 -T  /var/lib/jenkins/workspace/java-3.0/target/kubernetes-configmap-reload-0.0.1-SNAPSHOT.jar "http://3.90.82.200:8082/artifactory/example-repo-local/kubernetes-configmap-reload-0.0.1-SNAPSHOT.jar"'
+                }
+            }
+        }
         stage('Docker Image Cleanup : DockerHub '){
          when { expression {  params.action == 'create' } }
             steps{
